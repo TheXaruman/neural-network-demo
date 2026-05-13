@@ -1,5 +1,8 @@
 use ndarray::Array1;
 use ndarray_rand::{RandomExt, rand_distr::Uniform};
+use std::sync::{LazyLock, Mutex};
+
+static LEARNING_RATE: LazyLock<Mutex<f64>> = LazyLock::new(|| Mutex::new(0.1));
 
 pub struct Neuron {
     weights: Array1<f64>,
@@ -7,8 +10,6 @@ pub struct Neuron {
 }
 
 impl Neuron {
-    const LEARNING_RATE: f64 = 0.1;
-
     pub fn construct(n_inputs: usize) -> Self {
         let distribution = match Uniform::new(0.0, 1.0) {
       Ok(dist) => dist,
@@ -27,11 +28,17 @@ impl Neuron {
             "Vectors need to have the same length for dot product"
         );
         let sigmoid_gradient = output * (1.0 - output);
+        let current_learning_rate = LEARNING_RATE.lock().unwrap();
         for (weight, input) in &mut self.weights.iter_mut().zip(inputs.iter()) {
-            let delta_weight = Neuron::LEARNING_RATE * error_signal * sigmoid_gradient * input;
+            let delta_weight = *current_learning_rate * error_signal * sigmoid_gradient * input;
             *weight -= delta_weight;
         }
-        self.bias -= Neuron::LEARNING_RATE * error_signal * sigmoid_gradient;
+        self.bias -= *current_learning_rate * error_signal * sigmoid_gradient;
+    }
+
+    pub fn decay_learning_rate(decaying_factor: f64) {
+        let mut learning_rate = LEARNING_RATE.lock().unwrap();
+        *learning_rate *= decaying_factor;
     }
 }
 
@@ -80,4 +87,12 @@ mod test {
         let result = forward(&test_neuron, &inputs);
         assert!(result != 0.0);
     }
+
+        #[test]
+    fn learning_rate_decay() {
+        let learning_rate_before = *LEARNING_RATE.lock().unwrap();
+        Neuron::decay_learning_rate(0.99);
+        let learning_rate_after = *LEARNING_RATE.lock().unwrap();
+        assert!(learning_rate_before > learning_rate_after);
+    }    
 }
