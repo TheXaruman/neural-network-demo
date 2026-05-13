@@ -1,31 +1,55 @@
-use ndarray::{Array1};
-use ndarray_rand::{RandomExt, rand_distr::{Uniform}};
+use ndarray::Array1;
+use ndarray_rand::{RandomExt, rand_distr::Uniform};
 
 pub struct Neuron {
     weights: Array1<f64>,
-    bias: f64
+    bias: f64,
 }
 
 impl Neuron {
+    const LEARNING_RATE: f64 = 0.1;
+
     pub fn construct(n_inputs: usize) -> Self {
-        Neuron { 
-            weights: (Array1::random(n_inputs, Uniform::new(0.0, 1.0).unwrap())), 
-            bias: (rand::random_range(-1.0..1.0))
+        let distribution = match Uniform::new(0.0, 1.0) {
+      Ok(dist) => dist,
+      Err(err) => panic!("paniced with: {}", err)           
+    };
+        Neuron {
+            weights: Array1::random(n_inputs, distribution),
+            bias: (rand::random_range(-1.0..1.0)),
         }
+    }
+
+    pub fn train(&mut self, output: f64, inputs: Array1<f64>, error_signal: f64) {
+        assert_eq!(
+            self.weights.len(),
+            inputs.len(),
+            "Vectors need to have the same length for dot product"
+        );
+        let sigmoid_gradient = output * (1.0 - output);
+        for (weight, input) in &mut self.weights.iter_mut().zip(inputs.iter()) {
+            let delta_weight = Neuron::LEARNING_RATE * error_signal * sigmoid_gradient * input;
+            *weight -= delta_weight;
+        }
+        self.bias -= Neuron::LEARNING_RATE * error_signal * sigmoid_gradient;
     }
 }
 
 pub fn forward(neuron: &Neuron, input: &Array1<f64>) -> f64 {
-    assert_eq!(neuron.weights.len(), input.len(), "Vectors need to have the same length for dot product");
+    assert_eq!(
+        neuron.weights.len(),
+        input.len(),
+        "Vectors need to have the same length for dot product"
+    );
     let scalar_sum = input.dot(&neuron.weights);
     let z = scalar_sum + neuron.bias;
     1.0 / (1.0 + (-z).exp())
 }
 
 #[cfg(test)]
-mod test{
-    use ndarray::array;
+mod test {
     use super::*;
+    use ndarray::array;
     #[test]
     fn construct_random_weights() {
         let neuron_1 = Neuron::construct(3);
@@ -45,8 +69,15 @@ mod test{
     #[test]
     #[should_panic(expected = "Vectors need to have the same length for dot product")]
     fn vector_length_difference_panic() {
-        let neuron = Neuron::construct(5);
+        let test_neuron = Neuron::construct(5);
         let inputs = array!(1.0, 3.0);
-        forward(&neuron, &inputs);
+        forward(&test_neuron, &inputs);
+    }
+    #[test]
+    fn vector_addition() {
+        let test_neuron = Neuron::construct(2);
+        let inputs = array!(1.0, 3.0);
+        let result = forward(&test_neuron, &inputs);
+        assert!(result != 0.0);
     }
 }
