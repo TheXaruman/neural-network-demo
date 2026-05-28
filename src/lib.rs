@@ -1,23 +1,27 @@
-use ndarray::Array1;
+use ndarray::{Array1, Array2};
 use ndarray_rand::{RandomExt, rand_distr::Uniform};
 use std::sync::{LazyLock, Mutex};
 
 static LEARNING_RATE: LazyLock<Mutex<f64>> = LazyLock::new(|| Mutex::new(0.1));
-
-pub struct Neuron {
-    weights: Array1<f64>,
-    bias: f64,
+#[derive(Clone)]
+pub struct Layer {
+    weights: Array2<f64>,
+    bias: Array1<f64>,
 }
 
-impl Neuron {
-    pub fn construct(n_inputs: usize) -> Self {
-        let distribution = match Uniform::new(0.0, 1.0) {
-      Ok(dist) => dist,
-      Err(err) => panic!("paniced with: {}", err)           
-    };
-        Neuron {
-            weights: Array1::random(n_inputs, distribution),
-            bias: (rand::random_range(-1.0..1.0)),
+impl Layer {
+    pub fn construct(n_inputs: usize, n_neurons: usize) -> Self {
+        let weight_distribution = match Uniform::new(0.0, 1.0) {
+            Ok(dist) => dist,
+            Err(err) => panic!("paniced with: {}", err),
+        };
+        let bias_distribution = match Uniform::new(-1.0, 1.0) {
+            Ok(dist) => dist,
+            Err(err) => panic!("paniced with: {}", err),
+        };
+        Layer {
+            weights: Array2::random((n_inputs, n_neurons), weight_distribution),
+            bias: Array1::random(n_neurons, bias_distribution),
         }
     }
 
@@ -42,14 +46,25 @@ impl Neuron {
     }
 }
 
-pub fn forward(neuron: &Neuron, input: &Array1<f64>) -> f64 {
+pub fn forward_layer(layer: &Layer, input: &Array1<f64>) -> Array1<f64> {
+    let scalar_sum = input.dot(&layer.weights);
+    let z = scalar_sum + &layer.bias;
+    z.mapv(|zvalue| 1.0 / (1.0 + (-zvalue).exp()))
+}
+
+pub fn forward_f64(neuron: &Layer, input: &Array1<f64>) -> f64 {
+    assert_eq!(input.shape()[1], 1);
+    let one_d_weights: Array1<f64> = neuron.weights.clone().into_shape_with_order(neuron.weights.nrows()).unwrap();
+    assert_eq!(neuron.bias.len(), 1);
+    let zero_d_bias: f64 = neuron.bias[0];
     assert_eq!(
-        neuron.weights.len(),
+        one_d_weights.len(),
         input.len(),
         "Vectors need to have the same length for dot product"
     );
-    let scalar_sum = input.dot(&neuron.weights);
-    let z = scalar_sum + neuron.bias;
+    let scalar_sum = input.dot(&one_d_weights);
+    let z = scalar_sum + zero_d_bias;
+
     1.0 / (1.0 + (-z).exp())
 }
 
@@ -59,40 +74,40 @@ mod test {
     use ndarray::array;
     #[test]
     fn construct_random_weights() {
-        let neuron_1 = Neuron::construct(3);
-        let neuron_2 = Neuron::construct(3);
+        let layer_1 = Layer::construct(3, 3);
+        let layer_2 = Layer::construct(3, 3);
 
-        assert_ne!(neuron_1.weights, neuron_2.weights)
+        assert_ne!(layer_1.weights, layer_2.weights)
     }
 
     #[test]
     fn construct_random_bias() {
-        let neuron_1 = Neuron::construct(3);
-        let neuron_2 = Neuron::construct(3);
+        let layer_1 = Layer::construct(3, 3);
+        let layer_2 = Layer::construct(3, 3);
 
-        assert_ne!(neuron_1.bias, neuron_2.bias)
+        assert_ne!(layer_1.bias, layer_2.bias)
     }
 
     #[test]
     #[should_panic(expected = "Vectors need to have the same length for dot product")]
-    fn vector_length_difference_panic() {
-        let test_neuron = Neuron::construct(5);
+    fn forward_panic() {
+        let test_neuron = Layer::construct(5, 3);
         let inputs = array!(1.0, 3.0);
         forward(&test_neuron, &inputs);
     }
     #[test]
     fn vector_addition() {
-        let test_neuron = Neuron::construct(2);
+        let test_neuron = Layer::construct(2, 5);
         let inputs = array!(1.0, 3.0);
         let result = forward(&test_neuron, &inputs);
-        assert!(result != 0.0);
+        assert!(result != array![0.0]);
     }
 
-        #[test]
+    #[test]
     fn learning_rate_decay() {
         let learning_rate_before = *LEARNING_RATE.lock().unwrap();
-        Neuron::decay_learning_rate(0.99);
+        Layer::decay_learning_rate(0.99);
         let learning_rate_after = *LEARNING_RATE.lock().unwrap();
         assert!(learning_rate_before > learning_rate_after);
-    }    
+    }
 }
