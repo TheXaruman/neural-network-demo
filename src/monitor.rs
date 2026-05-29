@@ -1,6 +1,6 @@
 use eframe::egui;
-use egui::{pos2};
-use std::{sync::mpsc::Receiver};
+use egui::pos2;
+use std::sync::mpsc::Receiver;
 
 use crate::Layer;
 
@@ -43,7 +43,7 @@ impl eframe::App for Monitor {
 
             (self.hidden_layer, self.output_layer) = match self.rx.try_recv() {
                 Ok(layers) => layers,
-                Err(_) => unreachable!(),
+                Err(_) => return,
             };
 
             painter.circle(
@@ -70,17 +70,39 @@ impl eframe::App for Monitor {
                     circle_stroke,
                 );
             }
+
+            painter.circle(
+                pos2(column_unit * 8.0, height / 2.0),
+                radius,
+                fill,
+                circle_stroke,
+            );
+
             for u in 0..2 {
                 for i in 0..self.number_neurons {
-                    let branch_weight = (self.hidden_layer.as_ref().unwrap().get_weights()[(u, i)] + 10.0) / 20.0;
-                    let weight_stroke = egui::Stroke::new(4.0, egui::Color32::from_rgb(0, 255, 0));
-                    println!("{}",branch_weight);
+                    let branch_weight =
+                        (self.hidden_layer.as_ref().unwrap().get_weights()[(u, i)] + 10.0) / 20.0;
+                    let green_weight = (255.0 * branch_weight) as u8;
+                    let weight_stroke =
+                        egui::Stroke::new(4.0, egui::Color32::from_rgb(0, green_weight, 0));
                     let start_point = match u {
                         0 => pos2(column_unit * 2.0, row_unit * 3.0),
                         1 => pos2(column_unit * 2.0, row_unit * 7.0),
                         _ => unreachable!(),
                     };
                     let end_point = pos2(column_unit * 5.0, y_pos_unit * (i + 1) as f32);
+                    painter.line_segment([start_point, end_point], weight_stroke);
+                }
+            }
+            for u in 0..1 {
+                for i in 0..self.number_neurons {
+                    let branch_weight =
+                        (self.output_layer.as_ref().unwrap().get_weights()[(i, u)] + 10.0) / 20.0;
+                    let green_weight = (255.0 * branch_weight) as u8;
+                    let weight_stroke =
+                        egui::Stroke::new(4.0, egui::Color32::from_rgb(0, green_weight, 0));
+                    let start_point = pos2(column_unit * 5.0, y_pos_unit * (i + 1) as f32);
+                    let end_point = pos2(column_unit * 8.0, height / 2.0);
                     painter.line_segment([start_point, end_point], weight_stroke);
 
                 }

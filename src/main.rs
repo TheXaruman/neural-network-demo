@@ -38,11 +38,12 @@ fn main() {
                 layer.train(hidden_output, input_slice, hidden_error);
                 loss += error_signal.powi(2);
             }
-            // if epoch % 100 == 0 {
-            //     Layer::decay_learning_rate(0.9999);
-            // }
+            if epoch % 20 == 0 {
+                Layer::decay_learning_rate(0.9999);
+            }
 
-            tx.send((Some(layer.clone()), Some(decision_neutron.clone()))).ok();
+            tx.send((Some(layer.clone()), Some(decision_neutron.clone())))
+                .ok();
         }
     });
     // for loss in rx {
