@@ -1,95 +1,89 @@
-use std::sync::mpsc::Receiver;
 use eframe::egui;
-use egui::{Key::W, Pos2, Vec2, pos2};
+use egui::{pos2};
+use std::{sync::mpsc::Receiver};
+
+use crate::Layer;
 
 pub struct Monitor {
-    rx: Receiver<f64>,
-    current_loss: f64,
+    rx: Receiver<(Option<Layer>, Option<Layer>)>,
+    _current_loss: f64,
     number_neurons: usize,
+    hidden_layer: Option<Layer>,
+    output_layer: Option<Layer>,
 }
 
 impl Monitor {
-    pub fn construct(rx: Receiver<f64>, hidden_neurons: usize) -> Self {
+    pub fn construct(rx: Receiver<(Option<Layer>, Option<Layer>)>, hidden_neurons: usize) -> Self {
         Self {
             rx,
-            current_loss: 0.0,
+            _current_loss: 0.0,
             number_neurons: hidden_neurons,
+            hidden_layer: None,
+            output_layer: None,
         }
     }
 }
 
 impl eframe::App for Monitor {
-    fn update(&mut self, ctx: &egui::Context, frame: &mut eframe::Frame) {
-        while let Ok(new_loss) = self.rx.try_recv() {
-            self.current_loss = new_loss;
-        }
-
+    fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         egui::CentralPanel::default().show(ctx, |ui| {
-            
             let painter = ui.painter();
             let rect = painter.clip_rect();
 
             let height = rect.height();
             let width = rect.width();
-            
+
             let row_unit = height / 10.0;
             let column_unit = width / 10.0;
             let radius = height / 10.0 / (self.number_neurons as f32 / 2.5);
 
-            let stroke = egui::Stroke::new(4.0, egui::Color32::GREEN);
+            let circle_stroke = egui::Stroke::new(4.0, egui::Color32::GREEN);
             // let debug_stroke = egui::Stroke::new(4.0, egui::Color32::RED);
             let fill = egui::Color32::TRANSPARENT;
 
-            // painter.line_segment([pos2(0.0, 0.0), pos2(width, 0.0)], stroke);
-            // painter.line_segment([pos2(0.0, row_unit * 1.0), pos2(width, row_unit * 1.0)], stroke);
-            // painter.line_segment([pos2(0.0, row_unit * 2.0), pos2(width, row_unit * 2.0)], stroke);
-            // painter.line_segment([pos2(0.0, row_unit * 3.0), pos2(width, row_unit * 3.0)], stroke);
-            // painter.line_segment([pos2(0.0, row_unit * 4.0), pos2(width, row_unit * 4.0)], stroke);
-            // painter.line_segment([pos2(0.0, row_unit * 5.0), pos2(width, row_unit * 5.0)], stroke);
-            // painter.line_segment([pos2(0.0, row_unit * 6.0), pos2(width, row_unit * 6.0)], stroke);
-            // painter.line_segment([pos2(0.0, row_unit * 7.0), pos2(width, row_unit * 7.0)], stroke);
-            // painter.line_segment([pos2(0.0, row_unit * 8.0), pos2(width, row_unit * 8.0)], stroke);
-            // painter.line_segment([pos2(0.0, row_unit * 9.0), pos2(width, row_unit * 9.0)], stroke);
-            // painter.line_segment([pos2(0.0, row_unit * 10.0), pos2(width, row_unit * 10.0)], stroke);
-
-
-            // painter.line_segment([pos2(0.0, 0.0), pos2(0.0, height)], stroke);
-            // painter.line_segment([pos2(column_unit * 1.0, 0.0), pos2(column_unit * 1.0, height)], stroke);
-            // painter.line_segment([pos2(column_unit * 2.0, 0.0), pos2(column_unit * 2.0, height)], stroke);
-            // painter.line_segment([pos2(column_unit * 3.0, 0.0), pos2(column_unit * 3.0, height)], stroke);
-            // painter.line_segment([pos2(column_unit * 4.0, 0.0), pos2(column_unit * 4.0, height)], stroke);
-            // painter.line_segment([pos2(column_unit * 5.0, 0.0), pos2(column_unit * 5.0, height)], stroke);
-            // painter.line_segment([pos2(column_unit * 6.0, 0.0), pos2(column_unit * 6.0, height)], stroke);
-            // painter.line_segment([pos2(column_unit * 7.0, 0.0), pos2(column_unit * 7.0, height)], stroke);
-            // painter.line_segment([pos2(column_unit * 8.0, 0.0), pos2(column_unit * 8.0, height)], stroke);
-            // painter.line_segment([pos2(column_unit * 9.0, 0.0), pos2(column_unit * 9.0, height)], stroke);
-            // painter.line_segment([pos2(column_unit * 10.0, 0.0), pos2(column_unit * 10.0, height)], stroke);
+            (self.hidden_layer, self.output_layer) = match self.rx.try_recv() {
+                Ok(layers) => layers,
+                Err(_) => unreachable!(),
+            };
 
             painter.circle(
-                egui::pos2(column_unit * 2.0, row_unit * 3.0), 
-                radius, 
-                fill, 
-                stroke
+                pos2(column_unit * 2.0, row_unit * 3.0),
+                radius,
+                fill,
+                circle_stroke,
             );
-            
+
             painter.circle(
-                egui::pos2(column_unit * 2.0, row_unit * 7.0), 
-                radius, 
-                fill, 
-                stroke
+                egui::pos2(column_unit * 2.0, row_unit * 7.0),
+                radius,
+                fill,
+                circle_stroke,
             );
 
-            let y_pos_unit = (height - 2.0 * row_unit) / self.number_neurons as f32;
-
-
+            let y_pos_unit = height / (self.number_neurons as f32 + 1.0);
 
             for i in 0..self.number_neurons {
                 painter.circle(
-                egui::pos2(column_unit * 5.0, y_pos_unit * (i+1) as f32), 
-                radius, 
-                fill, 
-                stroke
-            );
+                    egui::pos2(column_unit * 5.0, y_pos_unit * (i + 1) as f32),
+                    radius,
+                    fill,
+                    circle_stroke,
+                );
+            }
+            for u in 0..2 {
+                for i in 0..self.number_neurons {
+                    let branch_weight = (self.hidden_layer.as_ref().unwrap().get_weights()[(u, i)] + 10.0) / 20.0;
+                    let weight_stroke = egui::Stroke::new(4.0, egui::Color32::from_rgb(0, 255, 0));
+                    println!("{}",branch_weight);
+                    let start_point = match u {
+                        0 => pos2(column_unit * 2.0, row_unit * 3.0),
+                        1 => pos2(column_unit * 2.0, row_unit * 7.0),
+                        _ => unreachable!(),
+                    };
+                    let end_point = pos2(column_unit * 5.0, y_pos_unit * (i + 1) as f32);
+                    painter.line_segment([start_point, end_point], weight_stroke);
+
+                }
             }
         });
         ctx.request_repaint();

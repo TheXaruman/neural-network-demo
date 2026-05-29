@@ -3,10 +3,10 @@ use neuralnetwork::*;
 use std::sync::mpsc;
 use std::thread;
 
-const HIDDEN_LAYER_NEURONS: usize = 64;
+const HIDDEN_LAYER_NEURONS: usize = 32;
 fn main() {
     let (tx, rx) = mpsc::channel();
-    
+
     thread::spawn(move || {
         //first two numbers are the input the last number the target
         let set = array![
@@ -38,17 +38,21 @@ fn main() {
                 layer.train(hidden_output, input_slice, hidden_error);
                 loss += error_signal.powi(2);
             }
-            if epoch % 100 == 0 {
-                Layer::decay_learning_rate(0.9999);
-            }
-            let average_loss = loss / 100.0;
-            tx.send(average_loss).ok();
+            // if epoch % 100 == 0 {
+            //     Layer::decay_learning_rate(0.9999);
+            // }
 
+            tx.send((Some(layer.clone()), Some(decision_neutron.clone()))).ok();
         }
     });
-    for loss in rx {
-        println!("{}", loss);
-    }
-    // let options = eframe::NativeOptions::default();
-    // eframe::run_native("Neural Network Demo", options, Box::new(|_cc| Ok(Box::new(Monitor::construct(rx, HIDDEN_LAYER_NEURONS))))).unwrap();
+    // for loss in rx {
+    //     println!("{}", loss);
+    // }
+    let options = eframe::NativeOptions::default();
+    eframe::run_native(
+        "Neural Network Demo",
+        options,
+        Box::new(|_cc| Ok(Box::new(Monitor::construct(rx, HIDDEN_LAYER_NEURONS)))),
+    )
+    .unwrap();
 }
