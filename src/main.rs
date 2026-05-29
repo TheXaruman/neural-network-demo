@@ -3,7 +3,7 @@ use neuralnetwork::*;
 use std::sync::mpsc;
 use std::thread;
 
-const HIDDEN_LAYER_NEURONS: usize = 3;
+const HIDDEN_LAYER_NEURONS: usize = 64;
 fn main() {
     let (tx, rx) = mpsc::channel();
     
@@ -43,12 +43,12 @@ fn main() {
             }
             let average_loss = loss / 100.0;
             tx.send(average_loss).ok();
-            println!("{}", average_loss / 100.0);
+
         }
     });
-    println!("Waiting for data");
     for loss in rx {
-        println!("Main Thread received loss: {}", loss);
+        println!("{}", loss);
     }
-
+    // let options = eframe::NativeOptions::default();
+    // eframe::run_native("Neural Network Demo", options, Box::new(|_cc| Ok(Box::new(Monitor::construct(rx, HIDDEN_LAYER_NEURONS))))).unwrap();
 }
