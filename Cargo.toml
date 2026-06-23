@@ -4,6 +4,8 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
+eframe = "0.33.3"
+egui = "0.33.3"
 ndarray = "0.17.2"
 ndarray-rand = "0.16.0"
 rand = "0.10.1"
