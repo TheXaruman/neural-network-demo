@@ -16,4 +16,5 @@ The idea is pretty simple: train a tiny network to solve XOR from scratch, and w
 I got tired of treating neural networks as black boxes. I wanted to feel what backpropagation actually does: how the error signal flows backwards, how weights nudge themselves in the right direction, and why things like learning rate decay matter.
 
 There are definitely rough edges here. The backpropagation is a simplified version and the architecture is not exactly state-of-the-art. But it learns XOR, and watching it converge is genuinely satisfying.
-<img width="927" height="1036" alt="image" src="https://github.com/user-attachments/assets/fc73aea0-7cdc-4805-a0d0-422bae018df5" />
+<img width="896" height="1013" alt="image" src="https://github.com/user-attachments/assets/869bafa9-436c-4e72-9b62-aaeb31d8006c" />
+
