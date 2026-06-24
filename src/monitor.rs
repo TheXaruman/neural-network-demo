@@ -38,7 +38,7 @@ impl eframe::App for Monitor {
             let height = rect.height();
             let width = rect.width();
 
-            let circle_stroke = egui::Stroke::new(4.0, egui::Color32::GREEN);
+            let circle_stroke = egui::Stroke::new(3.0, egui::Color32::GREEN);
             // let debug_stroke = egui::Stroke::new(4.0, egui::Color32::RED);
             let fill = egui::Color32::TRANSPARENT;
 
@@ -58,7 +58,7 @@ impl eframe::App for Monitor {
                 let get_weight_stroke = |weight: f32| {
                     let normalized = ((weight + 10.0) / 20.0).clamp(0.0, 1.0);
                     let green_weight = (255.0 * normalized) as u8;
-                    egui::Stroke::new(4.0, egui::Color32::from_rgb(0, green_weight, 0))
+                    egui::Stroke::new(2.0, egui::Color32::from_rgb(0, green_weight, 0))
                 };
 
                 if let Some(first_hidden) = hidden.first() {
