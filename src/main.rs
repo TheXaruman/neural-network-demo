@@ -3,8 +3,8 @@ use neuralnetwork::*;
 use std::sync::mpsc;
 use std::thread;
 
-const HIDDEN_LAYER_NEURONS: usize = 32;
-const HIDDEN_LAYER_COUNT: usize = 5;
+const HIDDEN_LAYER_NEURONS: usize = 16;
+const HIDDEN_LAYER_COUNT: usize = 6;
 fn main() {
     let (tx, rx) = mpsc::channel();
 
@@ -74,9 +74,7 @@ fn main() {
                 .ok();
         }
     });
-    // for loss in rx {
-    //     println!("{}", loss);
-    // }
+
     let options = eframe::NativeOptions::default();
     eframe::run_native(
         "Neural Network Demo",
