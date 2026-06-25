@@ -3,7 +3,7 @@ use neuralnetwork::*;
 use std::sync::mpsc;
 use std::thread;
 
-const HIDDEN_LAYER_NEURONS: usize = 16;
+const HIDDEN_LAYER_NEURONS: usize = 12;
 const HIDDEN_LAYER_COUNT: usize = 6;
 fn main() {
     let (tx, rx) = mpsc::channel();
@@ -66,8 +66,15 @@ fn main() {
                 }
                 _loss += error_signal.powi(2);
             }
-            if epoch % 20 == 0 {
+
+            let model = Model {
+                layers: layers.clone(),
+                decision: decision_neutron.clone(),
+            };
+
+            if epoch % 200 == 0 {
                 Layer::decay_learning_rate(0.9999);
+                model.save("model.json");
             }
 
             tx.send((Some(layers.clone()), Some(decision_neutron.clone())))
