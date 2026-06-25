@@ -1,13 +1,15 @@
 use ndarray::{Array1, Array2};
 use ndarray_rand::{RandomExt, rand_distr::Uniform};
+use serde::{Deserialize, Serialize};
 use std::sync::{LazyLock, Mutex};
 
-static LEARNING_RATE: LazyLock<Mutex<f64>> = LazyLock::new(|| Mutex::new(0.1));
-#[derive(Clone)]
+#[derive(Clone, Serialize, Deserialize)]
 pub struct Layer {
-    weights: Array2<f64>,
-    bias: Array1<f64>,
+    pub weights: Array2<f64>,
+    pub bias: Array1<f64>,
 }
+
+static LEARNING_RATE: LazyLock<Mutex<f64>> = LazyLock::new(|| Mutex::new(0.1));
 
 impl Layer {
     pub fn construct(n_inputs: usize, n_neurons: usize) -> Self {
@@ -59,6 +61,29 @@ impl Layer {
 
     pub fn get_bias(&self) -> Array1<f64> {
         self.bias.clone()
+    }
+}
+
+#[derive(Clone, Serialize, Deserialize)]
+pub struct Model {
+    pub layers: Vec<Layer>,
+    pub decision: Layer,
+}
+
+use std::fs::File;
+use std::io::{BufReader, BufWriter};
+
+impl Model {
+    pub fn save(&self, path: &str) {
+        let file = File::create(path).expect("cannot create file");
+        let writer = BufWriter::new(file);
+        serde_json::to_writer(writer, self).expect("save failed");
+    }
+
+    pub fn load(path: &str) -> Self {
+        let file = File::open(path).expect("cannot open file");
+        let reader = BufReader::new(file);
+        serde_json::from_reader(reader).expect("load failed")
     }
 }
 
@@ -277,7 +302,10 @@ mod test {
         Layer::decay_learning_rate(0.5);
 
         let lr_after = *LEARNING_RATE.lock().unwrap();
-        assert!(lr_after > 0.0, "learning rate must remain positive after decay");
+        assert!(
+            lr_after > 0.0,
+            "learning rate must remain positive after decay"
+        );
     }
 
     #[test]
