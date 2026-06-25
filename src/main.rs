@@ -72,7 +72,7 @@ fn main() {
                 decision: decision_neutron.clone(),
             };
 
-            if epoch % 200 == 0 {
+            if epoch % 20 == 0 {
                 Layer::decay_learning_rate(0.9999);
                 model.save("model.json");
             }
